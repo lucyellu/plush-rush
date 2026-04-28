@@ -368,9 +368,11 @@
     align-items:center; padding:8px 10px;
     border:1px solid #1c2128; border-radius:6px; margin-bottom:5px;
   }
-  .lb-flag-stack { display:flex; flex-direction:column; align-items:center; gap:0; line-height:1; }
-  .lb-flag-emoji { font-size:18px; }
-  .lb-flag-code { font-size:9px; color:#8b949e; font-weight:700; letter-spacing:1px; margin-top:1px; }
+  .lb-flag-stack { display:flex; flex-direction:column; align-items:center; gap:1px; line-height:1; }
+  .lb-flag-img { width:28px; height:18px; object-fit:cover; border-radius:2px; box-shadow:0 0 0 1px rgba(255,255,255,0.15); display:block; }
+  .lb-flag-code { font-size:9px; color:#FFD4A0; font-weight:700; letter-spacing:1px; margin-top:1px; }
+  /* Fallback: if image fails, the alt text shows */
+  .lb-flag-img[alt]:after { content:attr(alt); font-size:11px; color:#FFD4A0; }
   .lb-row.gold   { border-color:#FFD040; background:rgba(255,208,64,0.06); }
   .lb-row.silver { border-color:#c0c8d0; background:rgba(192,200,208,0.04); }
   .lb-row.bronze { border-color:#cd7f32; background:rgba(205,127,50,0.04); }
@@ -2695,52 +2697,74 @@ function calcMACDData(bars){
   const hist = macd.map((v,i)=>v-signal[i]);
   return { macd, signal, hist, offset:25 };
 }
+// game_001: pre-render MACD to an offscreen canvas once per (bars, zoom) change.
+// Per-frame work is just blitting + drawing the moving "now" cursor line.
+let _macdRendered = null;     // offscreen canvas of pre-drawn histogram
+let _macdRenderedKey = '';    // cache key: bars-length + zoom
+let _macdRenderedBH = 0;      // bar-height inside the offscreen image
+
 function renderMACD(){
   if(!macdCtx||!macdCanvas||macdCanvas.width<10) return;
   const MW=macdCanvas.width, MH=macdCanvas.height||300;
-  macdCtx.clearRect(0,0,MW,MH);
-  macdCtx.fillStyle='#0a0e18'; macdCtx.fillRect(0,0,MW,MH);
 
   if(mktBars.length<27){
+    macdCtx.fillStyle='#0a0e18'; macdCtx.fillRect(0,0,MW,MH);
     macdCtx.fillStyle='#8b949e'; macdCtx.font='10px Arial'; macdCtx.textAlign='center';
-    macdCtx.fillText('Need 27+ bars',MW/2,MH/2); return;
+    macdCtx.fillText('Need 27+ bars to compute MACD',MW/2,MH/2);
+    return;
   }
 
   if(!_macdCache||_macdCache.bars!==mktBars) _macdCache={bars:mktBars, data:calcMACDData(mktBars)};
   const d=_macdCache.data; if(!d) return;
 
-  const end=Math.max(0,mktBarIdx-d.offset+1);
-  const win=Math.min(end,macdZoomBars);
-  const start=Math.max(0,end-win);
-  const histSlice=d.hist.slice(start,end);
-  if(!histSlice.length) return;
+  // Show ALL bars from the start (preloaded MACD). The "now" cursor advances with mktBarIdx.
+  const histAll = d.hist;
+  const win = Math.min(histAll.length, macdZoomBars);
+  const start = Math.max(0, histAll.length - win);
+  const histSlice = histAll.slice(start, histAll.length);
 
-  const mx2=Math.max(...histSlice.map(Math.abs))||0.001;
-  const bH=Math.max(1,MH/Math.max(histSlice.length,1));
-  const midX=MW/2;
-
-  // Zero line (vertical)
-  macdCtx.strokeStyle='rgba(255,255,255,0.15)'; macdCtx.lineWidth=1;
-  macdCtx.beginPath(); macdCtx.moveTo(midX,0); macdCtx.lineTo(midX,MH); macdCtx.stroke();
-
-  // Histogram bars — horizontal, time goes top to bottom
-  histSlice.forEach((v,i)=>{
-    const y=i*bH;
-    const bw=Math.abs(v/mx2*(midX-3));
-    macdCtx.fillStyle=v>=0?'rgba(63,185,80,0.75)':'rgba(248,81,73,0.75)';
-    if(v>=0) macdCtx.fillRect(midX,y+0.5,bw,Math.max(bH-0.5,0.5));
-    else macdCtx.fillRect(midX-bw,y+0.5,bw,Math.max(bH-0.5,0.5));
-  });
-
-  // Current bar indicator
-  const curI=histSlice.length-1;
-  if(curI>=0){
-    const ch=histSlice[curI];
-    macdCtx.strokeStyle='rgba(255,255,255,0.4)'; macdCtx.lineWidth=1;
-    macdCtx.beginPath(); macdCtx.moveTo(0,curI*bH); macdCtx.lineTo(MW,curI*bH); macdCtx.stroke();
-    const infoEl=document.getElementById('macd-info');
-    if(infoEl) infoEl.innerHTML=`Hist <b style="color:${ch>=0?'#3fb950':'#f85149'}">${ch.toFixed(4)}</b>`;
+  // Re-render offscreen ONLY when (bars, zoom, MW, MH) change — not every frame.
+  const cacheKey = `${mktBars.length}|${macdZoomBars}|${MW}|${MH}`;
+  if (_macdRenderedKey !== cacheKey) {
+    if (!_macdRendered) _macdRendered = document.createElement('canvas');
+    _macdRendered.width = MW; _macdRendered.height = MH;
+    const oc = _macdRendered.getContext('2d');
+    oc.fillStyle='#0a0e18'; oc.fillRect(0,0,MW,MH);
+    const mx2 = Math.max(...histSlice.map(Math.abs)) || 0.001;
+    const bH = Math.max(1, MH / Math.max(histSlice.length, 1));
+    const midX = MW / 2;
+    // Zero line
+    oc.strokeStyle='rgba(255,255,255,0.15)'; oc.lineWidth=1;
+    oc.beginPath(); oc.moveTo(midX, 0); oc.lineTo(midX, MH); oc.stroke();
+    // Histogram bars
+    histSlice.forEach((v,i) => {
+      const y = i * bH;
+      const bw = Math.abs(v / mx2 * (midX - 3));
+      oc.fillStyle = v >= 0 ? 'rgba(63,185,80,0.75)' : 'rgba(248,81,73,0.75)';
+      if (v >= 0) oc.fillRect(midX, y+0.5, bw, Math.max(bH-0.5, 0.5));
+      else        oc.fillRect(midX-bw, y+0.5, bw, Math.max(bH-0.5, 0.5));
+    });
+    _macdRenderedKey = cacheKey;
+    _macdRenderedBH = bH;
   }
+
+  // Per-frame: blit + draw moving "now" cursor
+  macdCtx.drawImage(_macdRendered, 0, 0);
+  // Map current bar index to offscreen position
+  const curIdx = Math.max(0, Math.min(histSlice.length - 1, mktBarIdx - d.offset));
+  const cy = curIdx * _macdRenderedBH;
+  macdCtx.strokeStyle = 'rgba(255,255,255,0.7)';
+  macdCtx.lineWidth = 1.5;
+  macdCtx.beginPath(); macdCtx.moveTo(0, cy); macdCtx.lineTo(MW, cy); macdCtx.stroke();
+  // Right-side label
+  const ch = histSlice[curIdx];
+  macdCtx.fillStyle = ch >= 0 ? '#3fb950' : '#f85149';
+  macdCtx.font = 'bold 9px monospace';
+  macdCtx.textAlign = 'right';
+  macdCtx.fillText('NOW', MW-4, Math.max(8, cy-2));
+
+  const infoEl = document.getElementById('macd-info');
+  if (infoEl) infoEl.innerHTML = `Hist <b style="color:${ch>=0?'#3fb950':'#f85149'}">${ch.toFixed(4)}</b>`;
 }
 
 // ─── TIME & SALES ─────────────────────────────────────────────────────────────
@@ -3568,6 +3592,15 @@ function closeLeaderboard() {
 
 // Flag emoji → country code map (built once from FLAGS array)
 const FLAG_TO_CODE = Object.fromEntries(FLAGS);
+// Flag image src — uses flagcdn.com (free, CORS-friendly). Falls back to text.
+function flagImgHTML(flagEmoji) {
+  const code = FLAG_TO_CODE[flagEmoji] || '';
+  if (!code || code === '--') {
+    return `<div style="width:28px;height:18px;display:flex;align-items:center;justify-content:center;font-size:14px;">🏳️</div>`;
+  }
+  const lc = code.toLowerCase();
+  return `<img class="lb-flag-img" src="https://flagcdn.com/40x30/${lc}.png" srcset="https://flagcdn.com/56x42/${lc}.png 2x" alt="${code}" loading="lazy">`;
+}
 
 async function renderLeaderboard(forceRefetch=false) {
   document.querySelectorAll('.lb-sym-btn').forEach(b => {
@@ -3642,7 +3675,7 @@ async function renderLeaderboard(forceRefetch=false) {
     return `<div class="lb-row ${cls}">
       <div class="lb-rank ${cls}">${rankLabel}</div>
       <div class="lb-flag-stack">
-        <span class="lb-flag-emoji">${e.flag||'🏳️'}</span>
+        ${flagImgHTML(e.flag)}
         <span class="lb-flag-code">${code}</span>
       </div>
       <div>

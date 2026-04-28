@@ -1,3 +1,13 @@
+# Personal API keys — never commit
+config.json
+*.env
+.env
+.env.local
+
+# Claude Code local settings (not for deploy)
+.claude/
+CLAUDE.md
+
 # Internal handoff & build files
 state.md
 STATE.md

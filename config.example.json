@@ -1,0 +1,5 @@
+{
+  "_comment": "Copy this to config.json and add your Alpaca paper trading keys. The deployed game does NOT need keys — it uses pre-bundled bars + Binance/Yahoo fallbacks. Keys are only needed for local-dev live mode.",
+  "alpaca_key": "PK...",
+  "alpaca_secret": "..."
+}
