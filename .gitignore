@@ -1,0 +1,38 @@
+# Internal handoff & build files
+state.md
+STATE.md
+_make_shortcut.ps1
+
+# Blender / source assets (large, not needed at runtime)
+*.blend
+*.blend1
+*.fbx
+characters_group_*.blend
+addon.py
+assets/
+
+# Other-game files in this dir (shouldn't be deployed with plushie rush)
+stock_dashboard.html
+level-maker.html
+levels/
+
+# Test/preview assets
+bun_front2.png
+
+# Older versions / variants (not the jam build)
+game.html
+plushrush_alpaca.html
+plushrush_launch.bat
+plushrush.ico
+
+# Build / dev tooling
+prefetch_bars.py
+start-server.bat
+
+# Editor / OS junk
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+*.tmp
