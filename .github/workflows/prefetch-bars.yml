@@ -1,0 +1,58 @@
+# Auto-prefetch the morning hour's bars after market close.
+# Runs every weekday at 8:00 AM PT (15:00 UTC during PDT, 16:00 UTC during PST).
+# We schedule both — whichever the calendar is on, the other is a no-op duplicate.
+#
+# Required repo secrets:
+#   ALPACA_KEY     — APCA-API-KEY-ID  (paper account is fine)
+#   ALPACA_SECRET  — APCA-API-SECRET-KEY
+#
+# Set them at: github.com/lucyellu/plush-rush/settings/secrets/actions
+name: Prefetch morning-hour bars
+
+on:
+  schedule:
+    # 15:00 UTC = 08:00 PDT (summer)
+    - cron: '0 15 * * 1-5'
+    # 16:00 UTC = 08:00 PST (winter)
+    - cron: '0 16 * * 1-5'
+  workflow_dispatch:  # manual trigger from the Actions tab
+
+jobs:
+  prefetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # to commit new bundles back to the repo
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Write config.json from secrets
+        run: |
+          cat > config.json <<EOF
+          {
+            "alpaca_key":    "${{ secrets.ALPACA_KEY }}",
+            "alpaca_secret": "${{ secrets.ALPACA_SECRET }}"
+          }
+          EOF
+
+      - name: Run prefetch script
+        run: python prefetch_bars.py
+
+      - name: Remove config.json (don't commit secrets)
+        run: rm config.json
+
+      - name: Commit and push if there are new bundles
+        run: |
+          git config user.name  "plush-rush-bot"
+          git config user.email "noreply@github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "No new bundles — exiting"
+          else
+            git commit -m "auto-prefetch: $(date -u +%Y-%m-%d) bars"
+            git push
+          fi

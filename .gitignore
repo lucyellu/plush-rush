@@ -36,7 +36,7 @@ plushrush_launch.bat
 plushrush.ico
 
 # Build / dev tooling
-prefetch_bars.py
+# (prefetch_bars.py is committed — used by GitHub Actions for auto-fetch)
 start-server.bat
 
 # Editor / OS junk
