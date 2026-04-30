@@ -3,9 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Plushie Rush! 🐾</title>
-<!-- Cursor Vibe Jam 2026 tracking widget — required for jam entry -->
-<script async src="https://vibej.am/2026/widget.js"></script>
+<title>Plush Rush! 🐾</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background:#2c1408; display:flex; justify-content:center; align-items:center; min-height:100vh; font-family:'Segoe UI','Arial Rounded MT Bold',Arial,sans-serif; overflow:hidden; }
@@ -97,7 +95,7 @@
 <div id="ob-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:999;align-items:center;justify-content:center;padding:14px;font-family:'Segoe UI',Arial,sans-serif;">
   <div style="background:#161b22;border:2px solid #FF8A4D;border-radius:14px;padding:26px 28px;width:min(400px,98vw);color:#fff;text-align:center;">
     <div style="font-size:46px;line-height:1;margin-bottom:6px;">🐾</div>
-    <h2 style="font-size:24px;color:#FF8A4D;margin:0 0 4px;">Plushie Rush</h2>
+    <h2 style="font-size:24px;color:#FF8A4D;margin:0 0 4px;">Plush Rush</h2>
     <div style="font-size:12px;color:#8b949e;margin-bottom:18px;">Trade the morning hour with a plushie</div>
 
     <label style="display:block;text-align:left;font-size:11px;color:#c9d1d9;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;">Player name</label>
@@ -134,7 +132,7 @@
       <div style="position:absolute;bottom:-30px;left:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(63,185,80,0.18) 0%,transparent 70%);border-radius:50%;pointer-events:none;"></div>
 
       <div style="font-size:32px;line-height:1;">🐾</div>
-      <div style="font-size:11px;color:#FFD4A0;letter-spacing:2px;margin-top:4px;opacity:0.8;">PLUSHIE RUSH</div>
+      <div style="font-size:11px;color:#FFD4A0;letter-spacing:2px;margin-top:4px;opacity:0.8;">PLUSH RUSH</div>
 
       <!-- Daily challenge ribbon -->
       <div id="summary-challenge" style="display:inline-block;margin-top:10px;padding:4px 12px;background:rgba(255,216,64,0.15);border:1px solid #FFD840;border-radius:14px;font-size:10px;color:#FFD840;letter-spacing:1px;"></div>
@@ -158,7 +156,7 @@
       <div id="summary-beat" style="font-size:11px;color:#8b949e;"></div>
 
       <!-- Hashtag-ish footer -->
-      <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,138,77,0.3);font-size:10px;color:#6e7681;letter-spacing:1px;">#plushierush · vibejam2026</div>
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,138,77,0.3);font-size:10px;color:#6e7681;letter-spacing:1px;">#plushrush</div>
     </div>
 
     <!-- Action buttons (outside the screenshot card) -->
@@ -1469,7 +1467,7 @@ function drawMarketSelect(){
   // Title
   ctx.shadowColor='#FF8A4D'; ctx.shadowBlur=18;
   ctx.fillStyle='#FFF5E0'; ctx.font='bold 30px "Segoe UI",Arial';
-  ctx.fillText('PLUSHIE RUSH 🐾',W/2,46); ctx.shadowBlur=0;
+  ctx.fillText('PLUSH RUSH 🐾',W/2,46); ctx.shadowBlur=0;
   ctx.fillStyle='#FFD4A0'; ctx.font='12px Arial';
   ctx.fillText('Market Open · 6:30–7:30 AM PT first hour',W/2,68);
 
@@ -2501,7 +2499,7 @@ function drawMenu(){
   const chars=['bear','bun','wombat','cube'];
   for(let i=0;i<4;i++){ const a=menuAnim+(i/4)*Math.PI*2,rx=125,ry=48,cxx=W/2+Math.cos(a)*rx,cyy=390+Math.sin(a)*ry,sc=0.72+(Math.sin(a)+1)*0.14,sz=72*sc,img=IMG[chars[i]]; if(img&&img.complete&&img.naturalWidth>0){ const asp=img.naturalWidth/img.naturalHeight,dH=sz,dW=dH*asp; ctx.globalAlpha=0.65+sc*0.25; ctx.drawImage(img,cxx-dW/2,cyy-dH/2,dW,dH); } }
   ctx.globalAlpha=1;
-  const ty=140+Math.sin(menuAnim)*7; ctx.shadowColor='#FF9040'; ctx.shadowBlur=28; ctx.fillStyle='#FFF5E0'; ctx.font='bold 56px "Segoe UI",Arial'; ctx.fillText('PLUSHIE',W/2,ty); ctx.fillText('RUSH!',W/2,ty+58); ctx.shadowBlur=0; ctx.font='17px "Segoe UI",Arial'; ctx.fillStyle='#FFD4A0'; ctx.fillText('✨ an endless adventure ✨',W/2,ty+96);
+  const ty=140+Math.sin(menuAnim)*7; ctx.shadowColor='#FF9040'; ctx.shadowBlur=28; ctx.fillStyle='#FFF5E0'; ctx.font='bold 56px "Segoe UI",Arial'; ctx.fillText('PLUSH',W/2,ty); ctx.fillText('RUSH!',W/2,ty+58); ctx.shadowBlur=0; ctx.font='17px "Segoe UI",Arial'; ctx.fillStyle='#FFD4A0'; ctx.fillText('✨ an endless adventure ✨',W/2,ty+96);
   const pulse=0.92+Math.sin(menuAnim*2.2)*0.07; ctx.save(); ctx.translate(W/2,555); ctx.scale(pulse,pulse); const bgg=ctx.createLinearGradient(-110,-28,110,28); bgg.addColorStop(0,'#E87030'); bgg.addColorStop(1,'#C05020'); ctx.fillStyle=bgg; roundRect(ctx,-115,-29,230,58,29); ctx.fill(); ctx.strokeStyle='#FFD090'; ctx.lineWidth=2; roundRect(ctx,-115,-29,230,58,29); ctx.stroke(); ctx.fillStyle='#FFF5E0'; ctx.font='bold 22px "Segoe UI",Arial'; ctx.fillText('MARKET MODE 📊',0,8); ctx.restore();
   ctx.fillStyle='rgba(255,210,150,0.7)'; ctx.font='13px Arial'; ctx.fillText('or press  SPACE',W/2,610); ctx.restore();
 }
@@ -3887,22 +3885,21 @@ function formatLargeNumber(n) {
   return n.toFixed(0);
 }
 function buildFunFact(snap) {
-  // Daily return as a fraction of starting balance, e.g., 0.005 = +0.5% per session
-  const dailyR = snap.startingBalance > 0 ? snap.pnl / snap.startingBalance : 0;
-  if (Math.abs(dailyR) < 0.0001) {
+  // $/sec during the run × seconds in a year (continuous, not compounded)
+  const sessionSec = snap.sessionMs > 0 ? snap.sessionMs / 1000 : 0;
+  if (sessionSec < 1 || Math.abs(snap.pnl) < 0.5) {
     return `🤏 Tiny session — try a longer run or a bigger swing!`;
   }
-  if (dailyR > 0) {
-    // Compound 252 trading days (1 year). Cap at quadrillions for sanity.
-    const years = 1;
-    const factor = Math.pow(1 + dailyR, 252 * years);
-    const future = Math.min(snap.startingBalance * factor, 1e18);
-    const dblDays = Math.ceil(Math.log(2) / Math.log(1 + dailyR));
-    return `📈 If you made <b>${(dailyR*100).toFixed(2)}%</b> every trading day, your $${formatLargeNumber(snap.startingBalance)} would compound to <b>$${formatLargeNumber(future)}</b> in a year. (Doubles every ${dblDays} day${dblDays===1?'':'s'}.)`;
+  const perSec  = snap.pnl / sessionSec;
+  const perYear = perSec * 31557600;   // 365.25 * 24 * 3600
+  const fmtPerSec = Math.abs(perSec) >= 1000
+    ? '$' + formatLargeNumber(Math.abs(perSec))
+    : '$' + Math.abs(perSec).toFixed(2);
+  const fmtPerYear = '$' + formatLargeNumber(Math.abs(perYear));
+  if (perSec >= 0) {
+    return `💰 You made <b>${fmtPerSec}/sec</b> during that run. At that rate, that'd be <b>${fmtPerYear}/year</b>.`;
   } else {
-    // Days to lose 99% of portfolio at this daily loss rate
-    const days = Math.ceil(Math.log(0.01) / Math.log(1 + dailyR));
-    return `📉 At <b>${(dailyR*100).toFixed(2)}%</b>/day, you'd be wiped out in <b>${days} trading day${days===1?'':'s'}</b>. (Halve every ${Math.ceil(Math.log(0.5)/Math.log(1+dailyR))} day${Math.ceil(Math.log(0.5)/Math.log(1+dailyR))===1?'':'s'}.)`;
+    return `📉 You lost <b>${fmtPerSec}/sec</b> during that run. At that rate, you'd lose <b>${fmtPerYear}/year</b>.`;
   }
 }
 
@@ -4068,7 +4065,7 @@ async function shareSummaryAsImage() {
     c.toBlob(b => {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(b);
-      a.download = `plushie-rush_${(mktDate||'session').replace(/-/g,'')}.png`;
+      a.download = `plush-rush_${(mktDate||'session').replace(/-/g,'')}.png`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
       document.getElementById('summary-toast').textContent = '✓ Image saved';
@@ -4083,11 +4080,11 @@ async function copySummaryText() {
   const snap = _lastSummarySnap;
   if (!snap) return;
   const sign = snap.pnl >= 0 ? '+' : '-';
-  const txt = `🐾 Plushie Rush — ${snap.flag} ${snap.name}
+  const txt = `🐾 Plush Rush — ${snap.flag} ${snap.name}
 ${sign}$${Math.abs(snap.pnl).toFixed(2)} (${snap.pctOfPortfolio.toFixed(2)}%)
 ${snap.symEmoji} ${snap.symLabel} · ${snap.date}${snap.isLive ? ' (LIVE)' : ''}
 ${snap.trades} trades · ${snap.pct.toFixed(0)}% of optimal
-plushie-rush.netlify.app  #vibejam2026`;
+plush-rush.netlify.app`;
   try {
     await navigator.clipboard.writeText(txt);
     document.getElementById('summary-toast').textContent = '✓ Stats copied to clipboard';
@@ -4141,7 +4138,7 @@ function exportTradesCSV() {
       side,
       '0.00',
       'USD',
-      `"${note} · plushie-rush"`,
+      `"${note} · plush-rush"`,
     ].join(','));
   }
   const csv = rows.join('\n');
@@ -4149,7 +4146,7 @@ function exportTradesCSV() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `plushie-rush_trades_${(mktDate||'session').replace(/-/g,'')}.csv`;
+  a.download = `plush-rush_trades_${(mktDate||'session').replace(/-/g,'')}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   document.getElementById('summary-toast').textContent = `✓ Exported ${rows.length-1} trades — TraderVue / IBKR format`;
