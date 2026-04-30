@@ -673,36 +673,51 @@ async function fetchBundledBars(symInfo, date) {
   } catch {}
   return null;
 }
+// Proxy chain — corsproxy.io 403'd free-tier server-side requests around 2026-04,
+// allorigins.win is now primary. Used by both fetchYahooBars and any future live fetch.
+const _PROXY_CHAIN = [
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+];
+async function _fetchProxied(url) {
+  for (const wrap of _PROXY_CHAIN) {
+    try {
+      const r = await fetch(wrap(url), { cache: 'no-store' });
+      if (!r.ok) continue;
+      const text = await r.text();
+      if (!text) continue;
+      try { return JSON.parse(text); } catch { continue; }
+    } catch { /* next */ }
+  }
+  return null;
+}
 async function fetchYahooBars(symInfo, date) {
-  // Fallback for stocks: Yahoo Finance v8 chart API via corsproxy.io.
+  // Fallback for stocks: Yahoo Finance v8 chart API via the proxy chain.
   // Returns a 1-min bars array for the morning hour matching Alpaca's shape.
   if (symInfo.crypto) return null;  // crypto handled by Binance fallback
   const startSec = Math.floor(new Date(ptToUTC(date, 6, 30)).getTime() / 1000);
   const endSec   = Math.floor(new Date(ptToUTC(date, 7, 30)).getTime() / 1000);
-  const url = `https://corsproxy.io/?${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${symInfo.sym}?period1=${startSec}&period2=${endSec}&interval=1m`)}`;
-  try {
-    const r = await fetch(url);
-    if (!r.ok) return null;
-    const j = await r.json();
-    const result = j?.chart?.result?.[0];
-    if (!result) return null;
-    const ts = result.timestamp || [];
-    const q  = result.indicators?.quote?.[0];
-    if (!q || !ts.length) return null;
-    const bars = [];
-    for (let i = 0; i < ts.length; i++) {
-      if (q.close[i] == null) continue;
-      bars.push({
-        t: new Date(ts[i] * 1000).toISOString(),
-        o: q.open[i] ?? q.close[i],
-        h: q.high[i] ?? q.close[i],
-        l: q.low[i]  ?? q.close[i],
-        c: q.close[i],
-        v: q.volume[i] || 0,
-      });
-    }
-    return bars.length >= 5 ? bars : null;
-  } catch { return null; }
+  const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symInfo.sym}?period1=${startSec}&period2=${endSec}&interval=1m`;
+  const j = await _fetchProxied(yahooUrl);
+  if (!j) return null;
+  const result = j?.chart?.result?.[0];
+  if (!result) return null;
+  const ts = result.timestamp || [];
+  const q  = result.indicators?.quote?.[0];
+  if (!q || !ts.length) return null;
+  const bars = [];
+  for (let i = 0; i < ts.length; i++) {
+    if (q.close[i] == null) continue;
+    bars.push({
+      t: new Date(ts[i] * 1000).toISOString(),
+      o: q.open[i] ?? q.close[i],
+      h: q.high[i] ?? q.close[i],
+      l: q.low[i]  ?? q.close[i],
+      c: q.close[i],
+      v: q.volume[i] || 0,
+    });
+  }
+  return bars.length >= 5 ? bars : null;
 }
 async function fetchBinanceBars(symInfo, date) {
   // Fallback for crypto: Binance public klines (no key, no CORS issues).
