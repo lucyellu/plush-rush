@@ -1,4 +1,4 @@
-# Plushie Rush 🐾
+# Plush Rush 🐾
 
 A 3D plushie runner where you trade the actual stock market open hour. Each lane is a position (LEFT = short, MIDDLE = flat, RIGHT = long). Beat the optimal path. Top 20 globally + biggest losers leaderboard. Daily Stock-of-the-Day Wordle-style challenge.
 

@@ -268,6 +268,38 @@
   }
 </style>
 
+<!-- ─── game_001: Ticker search overlay ──────────────────────────────────── -->
+<div id="sym-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:999;align-items:center;justify-content:center;padding:14px;font-family:'Segoe UI',Arial,sans-serif;">
+  <div style="background:#161b22;border:2px solid #58a6ff;border-radius:14px;padding:22px 24px;width:min(360px,96vw);color:#fff;text-align:center;">
+    <div style="font-size:17px;font-weight:700;color:#58a6ff;margin-bottom:6px;">🔍 Choose Ticker</div>
+    <div style="font-size:12px;color:#8b949e;margin-bottom:14px;">SPY · AAPL · NVDA · BTC · ETH · GLD…</div>
+    <input id="sym-input" type="text" placeholder="e.g. SPY" maxlength="10"
+      style="width:100%;padding:10px 12px;background:#0d1117;border:1px solid #30363d;border-radius:7px;color:#fff;font-size:18px;font-family:inherit;text-transform:uppercase;text-align:center;outline:none;margin-bottom:12px;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px;">
+      <button class="sym-quick-btn" onclick="submitSymSearch('SPY')">📈 SPY</button>
+      <button class="sym-quick-btn" onclick="submitSymSearch('AAPL')">🍎 AAPL</button>
+      <button class="sym-quick-btn" onclick="submitSymSearch('NVDA')">🖥 NVDA</button>
+      <button class="sym-quick-btn" onclick="submitSymSearch('BTC')">₿ BTC</button>
+      <button class="sym-quick-btn" onclick="submitSymSearch('ETH')">Ξ ETH</button>
+      <button class="sym-quick-btn" onclick="submitSymSearch('GLD')">🥇 GLD</button>
+      <button class="sym-quick-btn" onclick="submitSymSearch('QQQ')">📊 QQQ</button>
+      <button class="sym-quick-btn" onclick="submitSymSearch('TSLA')">⚡ TSLA</button>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="closeSymSearch()" style="flex:1;padding:9px;background:#21262d;border:1px solid #30363d;border-radius:7px;color:#8b949e;font-size:13px;cursor:pointer;">Cancel</button>
+      <button onclick="submitSymSearch(document.getElementById('sym-input').value)" style="flex:2;padding:9px;background:#58a6ff;border:none;border-radius:7px;color:#000;font-weight:700;font-size:14px;cursor:pointer;">Set Ticker</button>
+    </div>
+  </div>
+</div>
+<style>
+  .sym-quick-btn {
+    padding:5px 10px; background:#0d1117; color:#FFD4A0;
+    border:1px solid #30363d; border-radius:6px; cursor:pointer;
+    font-family:inherit; font-size:12px;
+  }
+  .sym-quick-btn:hover { background:#1c2128; border-color:#58a6ff; }
+</style>
+
 <!-- ─── game_001: Calendar overlay ─────────────────────────────────────── -->
 <div id="cal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:998;align-items:center;justify-content:center;padding:14px;font-family:'Segoe UI',Arial,sans-serif;">
   <div style="background:#161b22;border:2px solid #FF8A4D;border-radius:14px;padding:20px 22px;width:min(540px,98vw);max-height:92vh;overflow-y:auto;color:#fff;">
@@ -299,13 +331,6 @@
       <button id="lb-win-today" class="lb-win-btn">📅 Today</button>
       <button id="lb-win-all"   class="lb-win-btn">⏳ All-Time</button>
       <button id="lb-win-worst" class="lb-win-btn">💸 Biggest Losers</button>
-    </div>
-    <!-- Symbol filter -->
-    <div style="display:flex;gap:6px;margin-bottom:12px;">
-      <button id="lb-sym-ALL" class="lb-sym-btn" data-sym="ALL">🌍 All</button>
-      <button id="lb-sym-BTC" class="lb-sym-btn" data-sym="BTC/USD">₿ BTC</button>
-      <button id="lb-sym-SPY" class="lb-sym-btn" data-sym="SPY">📈 SPY</button>
-      <button id="lb-sym-GLD" class="lb-sym-btn" data-sym="GLD">🥇 GOLD</button>
     </div>
     <!-- Top of best — header summary -->
     <div id="lb-summary" style="display:flex;gap:10px;margin-bottom:10px;font-size:11px;"></div>
@@ -576,15 +601,23 @@ fetch('./config.json').then(r=>r.json()).then(cfg=>{
 // Kick off preload after a short delay (keys may come from config.json)
 setTimeout(()=>preloadAllBars(), 1500);
 const MKT_SYMS = [
-  { sym:'BTC/USD', label:'BTC',  color:'#F7931A', emoji:'₿',  crypto:true  },
   { sym:'SPY',     label:'SPY',  color:'#58a6ff', emoji:'📈', crypto:false },
+  { sym:'BTC/USD', label:'BTC',  color:'#F7931A', emoji:'₿',  crypto:true  },
   { sym:'GLD',     label:'GOLD', color:'#FFD040', emoji:'🥇', crypto:false },
 ];
+const CRYPTO_MAP = {
+  'BTC': { sym:'BTC/USD', label:'BTC',  color:'#F7931A', emoji:'₿',  crypto:true },
+  'ETH': { sym:'ETH/USD', label:'ETH',  color:'#627EEA', emoji:'Ξ',  crypto:true },
+  'SOL': { sym:'SOL/USD', label:'SOL',  color:'#9945FF', emoji:'◎',  crypto:true },
+  'DOGE':{ sym:'DOGE/USD',label:'DOGE', color:'#C2A633', emoji:'🐕', crypto:true },
+  'XRP': { sym:'XRP/USD', label:'XRP',  color:'#0085C0', emoji:'✦',  crypto:true },
+};
 
 // market game state
 let levelMode   = 'stock';   // 'bpc' | 'stock' | 'custom'
 let customLevelData = null; // loaded from JSON file
-let mktSymIdx   = 1; // default: SPY (game_001 default)
+let mktSymIdx   = 0; // default: SPY (index 0)
+let mktModeCard = 'morning'; // 'morning' | 'lastHour'
 let mktIsLive   = false;
 let mktDate     = '';  // auto-selected on first paint, see initDefaultDay()
 let mktBars     = [];
@@ -741,6 +774,68 @@ async function fetchBinanceBars(symInfo, date) {
     }));
   } catch { return null; }
 }
+// ─── TICKER SEARCH HELPERS ───────────────────────────────────────────────────
+function makeSymInfo(raw) {
+  const upper = raw.toUpperCase().trim().replace(/[^A-Z0-9./]/g, '');
+  if (CRYPTO_MAP[upper]) return { ...CRYPTO_MAP[upper] };
+  return { sym: upper, label: upper, color: '#58a6ff', emoji: '📈', crypto: false };
+}
+function setActiveTicker(raw) {
+  const si = makeSymInfo(raw);
+  let idx = MKT_SYMS.findIndex(s => s.sym === si.sym);
+  if (idx === -1) { MKT_SYMS.push(si); idx = MKT_SYMS.length - 1; }
+  mktSymIdx = idx;
+  localStorage.removeItem('plr001_user_picked_sym');
+}
+
+// ─── LAST-HOUR FETCH ─────────────────────────────────────────────────────────
+async function fetchLastHourBars(symInfo) {
+  const now = Date.now();
+  const since = now - 65 * 60 * 1000;
+  if (symInfo.crypto) {
+    const bnSym = symInfo.sym.replace('/USD','USDT');
+    const url = `https://api.binance.com/api/v3/klines?symbol=${bnSym}&interval=1m&startTime=${since}&limit=120`;
+    try {
+      const r = await fetch(url);
+      if (r.ok) {
+        const arr = await r.json();
+        if (Array.isArray(arr) && arr.length >= 5) {
+          return arr.map(k => ({
+            t: new Date(k[0]).toISOString(),
+            o: parseFloat(k[1]), h: parseFloat(k[2]),
+            l: parseFloat(k[3]), c: parseFloat(k[4]), v: parseFloat(k[5]),
+          }));
+        }
+      }
+    } catch {}
+    return [];
+  }
+  const p1 = Math.floor(since / 1000);
+  const p2 = Math.floor(now / 1000);
+  const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symInfo.sym}?period1=${p1}&period2=${p2}&interval=1m`;
+  const j = await _fetchProxied(yahooUrl);
+  if (!j) return [];
+  const result = j?.chart?.result?.[0];
+  if (!result) return [];
+  const ts = result.timestamp || [];
+  const q = result.indicators?.quote?.[0];
+  if (!q || !ts.length) return [];
+  const bars = [];
+  for (let i = 0; i < ts.length; i++) {
+    if (q.close[i] == null) continue;
+    bars.push({ t: new Date(ts[i]*1000).toISOString(), o:q.open[i]??q.close[i], h:q.high[i]??q.close[i], l:q.low[i]??q.close[i], c:q.close[i], v:q.volume[i]||0 });
+  }
+  return bars.length >= 5 ? bars : [];
+}
+function barsAreRecent(bars) {
+  if (!bars || !bars.length) return false;
+  return (Date.now() - new Date(bars[bars.length-1].t).getTime()) < 6 * 60 * 1000;
+}
+function isMorningLive() {
+  const t = ptNow(); const m = t.hour*60+t.minute;
+  return m >= 6*60+30 && m < 7*60+30;
+}
+
 async function fetchAlpacaBarsCached(symInfo, date){
   const mk=symInfo.sym+'_'+date;
   if(_barsMemCache[mk]) return _barsMemCache[mk];
@@ -874,20 +969,31 @@ async function loadMarketLevel(){
   mktLoading=true; mktLoadErr=''; mktLoadPct=0.1;
   try{
     const si=MKT_SYMS[mktSymIdx];
-    const date=mktDate||ptDateStrOffset(0);
-    mktLoadPct=0.3;
-    // game_001: derive speed + live state from the chosen day's morning hour status
-    const dates = getAvailableDates();
-    const chosen = dates.find(d => d.str === date);
-    if (chosen) {
-      if      (chosen.status === 'live')   { setMktSpeed(1);  mktIsLive = true;  }
-      else if (chosen.status === 'replay') { setMktSpeed(60); mktIsLive = false; }
-      else { throw new Error("This hour starts at 6:30 AM PT — come back then!"); }
-    }
-    const bars=await fetchAlpacaBarsCached(si, date);
-    mktLoadPct=0.8;
-    if((!bars||bars.length<5) && !(chosen && chosen.isToday && chosen.status === 'live')){
-      throw new Error('No data for this hour — market may be closed');
+    let bars=[];
+    if(mktModeCard==='lastHour'){
+      mktLoadPct=0.3;
+      bars=await fetchLastHourBars(si);
+      mktLoadPct=0.8;
+      if(!bars||bars.length<5) throw new Error('No recent data — market may be closed or ticker invalid');
+      const recent=barsAreRecent(bars);
+      setMktSpeed(recent?1:60); mktIsLive=recent;
+      if(bars.length>0) mktDate=bars[bars.length-1].t.slice(0,10);
+    } else {
+      // Morning Bell mode
+      const date=mktDate||ptDateStrOffset(0);
+      mktLoadPct=0.3;
+      const dates=getAvailableDates();
+      const chosen=dates.find(d=>d.str===date);
+      if(chosen){
+        if(chosen.status==='live')   { setMktSpeed(1);  mktIsLive=true;  }
+        else if(chosen.status==='replay'){ setMktSpeed(60); mktIsLive=false; }
+        else { throw new Error("Morning bell hasn't rung yet — opens at 9:30 AM ET!"); }
+      }
+      bars=await fetchAlpacaBarsCached(si,date);
+      mktLoadPct=0.8;
+      if((!bars||bars.length<5)&&!(chosen&&chosen.isToday&&chosen.status==='live')){
+        throw new Error('No data — market may be closed');
+      }
     }
     mktBars=bars||[]; mktSeq=barsToGameSeq(mktBars);
     mktOptimal=computeOptimal(mktBars); ghostLanes=buildGhostLanes(mktBars,mktOptimal);
@@ -1282,8 +1388,8 @@ function drawStockTimeline(){
   if(slice.length<2) return;
   const prices=slice.map(b=>b.c);
   const minP=Math.min(...prices), maxP=Math.max(...prices), range=maxP-minP||1;
-  // map bar index → y position in sidebar (bottom=oldest, top=newest? no — top=latest for a vertical chart)
-  const biy2sy=i=>TY+(i/(VIS-1))*TH;
+  // bottom=oldest bar, top=newest — dot climbs as game progresses
+  const biy2sy=i=>TY+TH-(i/(VIS-1))*TH;
   ctx.save();
   ctx.fillStyle='rgba(13,17,23,0.78)'; roundRect(ctx,TX,TY,TW,TH,8); ctx.fill();
   // Price sparkline (horizontal offset = price, vertical = time)
@@ -1417,39 +1523,9 @@ function getAvailableDates() {
 }
 
 // ─── MARKET SELECT SCREEN (game_001 — simplified) ────────────────────────────
-let mktAdvancedOpen = false;  // collapse/expand for advanced settings
-
-// game_001: Stock of the Day — rotates by weekday. Auto-applied on first
-// page paint (and won't override if user has manually picked a different sym).
-const STOCK_OF_DAY = {
-  // Day-of-week (PT) → MKT_SYMS index
-  // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
-  1: 1,  // Mon → SPY
-  2: 0,  // Tue → BTC/USD
-  3: 2,  // Wed → GLD
-  4: 1,  // Thu → SPY
-  5: 0,  // Fri → BTC/USD
-  // Weekend defaults to Friday's pick
-  0: 0, 6: 0,
-};
-function stockOfTheDayIdx() {
-  const today = ptNow();
-  const [y,m,d] = today.dateStr.split('-').map(Number);
-  const dt = new Date(Date.UTC(y, m-1, d, 19, 0, 0));
-  const wd = dt.getUTCDay();
-  return STOCK_OF_DAY[wd] ?? 1;
-}
-let _sotdApplied = false;
+let mktAdvancedOpen = false;
 
 function initDefaultDay() {
-  // Apply Stock of the Day on first marketselect paint, unless user picked one.
-  if (!_sotdApplied) {
-    if (localStorage.getItem('plr001_user_picked_sym') !== '1') {
-      mktSymIdx = stockOfTheDayIdx();
-    }
-    _sotdApplied = true;
-  }
-  // Pick the first playable day (live, then most recent replay)
   if (mktDate) return;
   const dates = getAvailableDates();
   const preferred = dates.find(d => d.status === 'live')
@@ -1470,233 +1546,144 @@ function drawMarketSelect(){
   ctx.fillStyle='#FFF5E0'; ctx.font='bold 30px "Segoe UI",Arial';
   ctx.fillText('PLUSH RUSH 🐾',W/2,46); ctx.shadowBlur=0;
   ctx.fillStyle='#FFD4A0'; ctx.font='12px Arial';
-  ctx.fillText('Market Open · 6:30–7:30 AM PT first hour',W/2,68);
+  ctx.fillText('Trade real markets with a plushie',W/2,68);
 
-  // Symbol picker (compact row) — SOTD badge marks today's featured stock
-  const sotdIdx = stockOfTheDayIdx();
-  const sw=104, sg=8, sx0=(W - (MKT_SYMS.length*sw + (MKT_SYMS.length-1)*sg))/2;
-  MKT_SYMS.forEach((s,i)=>{
-    const bx=sx0+i*(sw+sg), by=85, sel=i===mktSymIdx, isSotd=(i===sotdIdx);
-    ctx.fillStyle=sel?s.color+'BB':'rgba(22,27,34,0.92)';
-    roundRect(ctx,bx,by,sw,40,9); ctx.fill();
-    ctx.strokeStyle=sel?s.color:(isSotd?'#FFD840':'#553520'); ctx.lineWidth=sel?2.5:1.5;
-    roundRect(ctx,bx,by,sw,40,9); ctx.stroke();
-    ctx.font='bold 18px Arial'; ctx.textAlign='center';
-    ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowBlur=3;
-    ctx.fillStyle=sel?'#fff':'#FFD4A0';
-    ctx.fillText(s.emoji+' '+s.label, bx+sw/2, by+25);
+  // Ticker picker — single large button, click to search
+  const si = MKT_SYMS[mktSymIdx];
+  const tkW=220, tkH=42, tkX=W/2-tkW/2, tkY=80;
+  ctx.fillStyle = si.color+'2A';
+  roundRect(ctx,tkX,tkY,tkW,tkH,11); ctx.fill();
+  ctx.strokeStyle=si.color; ctx.lineWidth=2;
+  roundRect(ctx,tkX,tkY,tkW,tkH,11); ctx.stroke();
+  ctx.font='bold 20px Arial'; ctx.fillStyle='#FFF5E0'; ctx.textAlign='center';
+  ctx.fillText(si.emoji+' '+si.label, W/2-8, tkY+27);
+  ctx.font='15px Arial'; ctx.fillStyle='#FFD4A0';
+  ctx.fillText('🔍', tkX+tkW-18, tkY+28);
+  ctx.font='10px Arial'; ctx.fillStyle='#8b949e';
+  ctx.fillText('tap to change ticker', W/2, tkY+tkH+10);
+
+  // Mode cards
+  const cardW=(W-18*2-12)/2, cardH=136, cardY=148;
+  const liveT=(Math.sin(menuAnim*4)+1)*0.5;
+  const morning = isMorningLive();
+
+  const MODES = [
+    { id:'morning',  icon:'🔔', title:'Morning Bell',  sub1:'9:30–10:30 AM ET',   sub2:'Last trading day',
+      badge: morning ? '● LIVE  1×' : '▶ REPLAY  60×',
+      badgeColor: morning ? '#FF6B5C' : '#5DFFAA',
+      live: morning },
+    { id:'lastHour', icon:'⚡', title:'Live · 60× Delay', sub1:'Last 60 min of data', sub2:'Any time · any ticker',
+      badge:'⚡ LIVE  /  60×', badgeColor:'#FFD4A0', live:false },
+  ];
+
+  MODES.forEach((m,i)=>{
+    const bx=18+i*(cardW+12), sel=mktModeCard===m.id;
+    let fill='rgba(22,27,34,0.85)', stroke='#30363d';
+    if(sel&&m.live){ fill='rgba(80,20,20,0.92)'; stroke=`rgba(248,81,73,${0.6+0.4*liveT})`; }
+    else if(sel)   { fill='rgba(18,42,72,0.92)'; stroke='#58a6ff'; }
+    ctx.fillStyle=fill; roundRect(ctx,bx,cardY,cardW,cardH,14); ctx.fill();
+    ctx.strokeStyle=stroke; ctx.lineWidth=sel?2.5:1.5;
+    roundRect(ctx,bx,cardY,cardW,cardH,14); ctx.stroke();
+    ctx.textAlign='center';
+    ctx.font='22px Arial'; ctx.fillStyle='#FFF5E0'; ctx.shadowBlur=0;
+    ctx.fillText(m.icon, bx+cardW/2, cardY+30);
+    ctx.shadowColor='rgba(0,0,0,0.7)'; ctx.shadowBlur=sel?5:0;
+    ctx.font='bold 13px "Segoe UI",Arial'; ctx.fillStyle='#FFF5E0';
+    ctx.fillText(m.title, bx+cardW/2, cardY+50);
     ctx.shadowBlur=0;
-    // Stock of the Day badge
-    if (isSotd) {
-      const pulse = 0.85 + 0.15*Math.sin(menuAnim*5);
-      ctx.save();
-      ctx.fillStyle = `rgba(255,216,64,${pulse})`;
-      roundRect(ctx, bx+sw-26, by-8, 24, 14, 4); ctx.fill();
-      ctx.fillStyle = '#1a1a00';
-      ctx.font = 'bold 8px Arial';
-      ctx.fillText('SOTD', bx+sw-14, by+1);
-      ctx.restore();
-    }
+    ctx.font='11px Arial'; ctx.fillStyle=sel?'#c9d1d9':'#8b949e';
+    ctx.fillText(m.sub1, bx+cardW/2, cardY+68);
+    ctx.fillText(m.sub2, bx+cardW/2, cardY+82);
+    ctx.font='bold 12px Arial'; ctx.fillStyle=m.badgeColor;
+    ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowBlur=4;
+    ctx.fillText(m.badge, bx+cardW/2, cardY+108);
+    ctx.shadowBlur=0;
   });
 
-  // Day cards — TODAY + YESTERDAY only (game_001 simplified)
-  // Past days are accessed via the Calendar button.
-  const dates = getAvailableDates();
-  const visible = dates.slice(0, 2);
-  const cardW = (W - 18*2 - 12) / 2;  // 2 cards side-by-side
-  const cardH = 140;
-  const cardY = 145;
-  const liveT = (Math.sin(menuAnim*4)+1)*0.5;
-
-  visible.forEach((d, i) => {
-    const bx = 18 + i*(cardW + 12);
-    const by = cardY;
-    const sel = mktDate === d.str;
-    const isLocked = d.status === 'soon';
-    const isLive   = d.status === 'live';
-    const score = getDayHighScore(MKT_SYMS[mktSymIdx].sym, d.str);
-
-    let fillColor = 'rgba(22,27,34,0.85)';
-    let strokeColor = '#30363d';
-    if (sel)         { fillColor = '#58a6ff33'; strokeColor = '#58a6ff'; }
-    if (isLocked)    { fillColor = 'rgba(40,30,15,0.55)'; strokeColor = '#553520'; }
-    else if (isLive) {
-      fillColor = sel ? '#f8514933' : 'rgba(40,15,15,0.85)';
-      strokeColor = `rgba(248,81,73,${0.6 + 0.4*liveT})`;
-    }
-    ctx.fillStyle = fillColor;
-    roundRect(ctx, bx, by, cardW, cardH, 14); ctx.fill();
-    ctx.strokeStyle = strokeColor; ctx.lineWidth = (sel||isLive) ? 2.5 : 1.5;
-    roundRect(ctx, bx, by, cardW, cardH, 14); ctx.stroke();
-
-    if (isLocked) ctx.globalAlpha = 0.55;
-    // Day label (big, with shadow for readability against any background)
-    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 6;
-    ctx.fillStyle = isLocked ? '#aab1b8' : '#FFFFFF';
-    ctx.font = 'bold 28px "Segoe UI",Arial'; ctx.textAlign='center';
-    ctx.fillText(d.label, bx+cardW/2, by+38);
-    ctx.shadowBlur = 0;
-
-    // Date string — brighter, with subtle bg
-    ctx.fillStyle = '#FFD4A0'; ctx.font = 'bold 12px monospace';
-    ctx.fillText(d.str, bx+cardW/2, by+58);
-
-    // Status badge (centered, big, with shadow)
-    let bColor='#aab1b8', bText='';
-    if (isLocked)      { bColor='#FFB050'; bText='⏰ Opens 6:30 AM PT'; }
-    else if (isLive)   { bColor='#FF6B5C'; bText='● LIVE  1×'; }
-    else                { bColor='#5DFFAA'; bText='▶ REPLAY  60×'; }
-    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4;
-    ctx.fillStyle = bColor; ctx.font='bold 15px Arial';
-    ctx.fillText(bText, bx+cardW/2, by+85);
-    ctx.shadowBlur = 0;
-
-    // High score / placeholder — brighter
-    if (score) {
-      const isPos = score.pnl >= 0;
-      ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 4;
-      ctx.fillStyle = isPos ? '#5DFFAA' : '#FF6B5C';
-      ctx.font = 'bold 18px "Segoe UI",Arial';
-      const pnlStr = (isPos?'+$':'-$') + Math.abs(score.pnl).toFixed(0);
-      ctx.fillText('🏆 ' + pnlStr, bx+cardW/2, by+116);
-      ctx.shadowBlur = 0;
-    } else {
-      ctx.fillStyle = '#aab1b8'; ctx.font = 'bold 12px Arial';
-      ctx.fillText('— tap to play —', bx+cardW/2, by+116);
-    }
-    ctx.globalAlpha = 1;
-  });
-
-  // Calendar + Leaderboard buttons (brighter)
-  const btnY = cardY + cardH + 18;
-  const btnGap = 10, btnW = (W - 36 - btnGap) / 2;
-  ctx.fillStyle = 'rgba(85,53,32,0.9)';
-  roundRect(ctx, 18, btnY, btnW, 36, 9); ctx.fill();
-  ctx.strokeStyle = '#FFD4A0'; ctx.lineWidth=1.5;
-  roundRect(ctx, 18, btnY, btnW, 36, 9); ctx.stroke();
-  ctx.fillStyle = '#FFF5E0'; ctx.font = 'bold 14px "Segoe UI",Arial'; ctx.textAlign='center';
+  // Calendar + Leaderboard buttons
+  const btnY=cardY+cardH+16, btnGap=10, btnW=(W-36-btnGap)/2;
+  ctx.fillStyle='rgba(85,53,32,0.9)';
+  roundRect(ctx,18,btnY,btnW,36,9); ctx.fill();
+  ctx.strokeStyle='#FFD4A0'; ctx.lineWidth=1.5;
+  roundRect(ctx,18,btnY,btnW,36,9); ctx.stroke();
+  ctx.fillStyle='#FFF5E0'; ctx.font='bold 14px "Segoe UI",Arial'; ctx.textAlign='center';
   ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowBlur=3;
   ctx.fillText('📅 Calendar', 18+btnW/2, btnY+24);
-
-  ctx.fillStyle = 'rgba(85,53,32,0.9)';
-  roundRect(ctx, 18+btnW+btnGap, btnY, btnW, 36, 9); ctx.fill();
-  ctx.strokeStyle = '#FFD4A0'; ctx.lineWidth=1.5;
-  roundRect(ctx, 18+btnW+btnGap, btnY, btnW, 36, 9); ctx.stroke();
-  ctx.fillStyle = '#FFF5E0';
+  ctx.fillStyle='rgba(85,53,32,0.9)';
+  roundRect(ctx,18+btnW+btnGap,btnY,btnW,36,9); ctx.fill();
+  ctx.strokeStyle='#FFD4A0'; ctx.lineWidth=1.5;
+  roundRect(ctx,18+btnW+btnGap,btnY,btnW,36,9); ctx.stroke();
+  ctx.fillStyle='#FFF5E0';
   ctx.fillText('🏆 Leaderboard', 18+btnW+btnGap+btnW/2, btnY+24);
-  ctx.shadowBlur = 0;
+  ctx.shadowBlur=0;
 
-  // Advanced settings button (brighter)
-  const advY = btnY + 46;
-  ctx.fillStyle = 'rgba(22,27,34,0.85)';
-  roundRect(ctx, 18, advY, W-36, 28, 7); ctx.fill();
-  ctx.strokeStyle = '#553520'; ctx.lineWidth=1;
-  roundRect(ctx, 18, advY, W-36, 28, 7); ctx.stroke();
-  ctx.fillStyle = '#FFD4A0';
-  ctx.font = 'bold 12px Arial'; ctx.textAlign='center';
+  // Advanced settings
+  const advY=btnY+46;
+  ctx.fillStyle='rgba(22,27,34,0.85)';
+  roundRect(ctx,18,advY,W-36,28,7); ctx.fill();
+  ctx.strokeStyle='#553520'; ctx.lineWidth=1;
+  roundRect(ctx,18,advY,W-36,28,7); ctx.stroke();
+  ctx.fillStyle='#FFD4A0'; ctx.font='bold 12px Arial'; ctx.textAlign='center';
   ctx.fillText('⚙  Advanced settings', W/2, advY+18);
 
-  // Bottom: PLAY button (no API key UI — keys are baked in)
-  const playY = H - 60;
-
-  // Loading / error
-  if (mktLoadErr) {
+  // PLAY button
+  const playY=H-60;
+  if(mktLoadErr){
     ctx.fillStyle='#f85149'; ctx.font='11px Arial'; ctx.textAlign='center';
     ctx.fillText('⚠ '+mktLoadErr, W/2, playY-50);
-  } else if (mktLoading) {
+  } else if(mktLoading){
     ctx.fillStyle='#58a6ff'; ctx.font='12px Arial';
     ctx.fillText('Loading…', W/2, playY-52);
-    ctx.fillStyle='rgba(0,0,0,0.4)'; roundRect(ctx, W/2-90, playY-46, 180, 8, 4); ctx.fill();
-    ctx.fillStyle='#58a6ff'; roundRect(ctx, W/2-90, playY-46, 180*mktLoadPct, 8, 4); ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,0.4)'; roundRect(ctx,W/2-90,playY-46,180,8,4); ctx.fill();
+    ctx.fillStyle='#58a6ff'; roundRect(ctx,W/2-90,playY-46,180*mktLoadPct,8,4); ctx.fill();
   }
-
-  // PLAY button
-  if (!mktLoading) {
-    const si = MKT_SYMS[mktSymIdx];
-    const dates = getAvailableDates();
-    const chosen = dates.find(d => d.str === mktDate) || dates.find(d => d.status !== 'soon') || dates[0];
-    const canPlay = chosen && chosen.status !== 'soon';
-    const pulse = canPlay ? 0.96+Math.sin(menuAnim*3)*0.04 : 1.0;
-    ctx.save();
-    ctx.translate(W/2, playY);
-    ctx.scale(pulse, pulse);
-    const bgg = ctx.createLinearGradient(-115, -26, 115, 26);
-    if (canPlay) {
-      bgg.addColorStop(0, si.color); bgg.addColorStop(1, '#0d1117');
-    } else {
-      bgg.addColorStop(0, '#444'); bgg.addColorStop(1, '#222');
-    }
-    ctx.fillStyle = bgg; roundRect(ctx, -115, -25, 230, 50, 25); ctx.fill();
-    ctx.strokeStyle = canPlay ? si.color+'AA' : '#666'; ctx.lineWidth=1.5;
-    roundRect(ctx, -115, -25, 230, 50, 25); ctx.stroke();
-    ctx.fillStyle = canPlay ? '#FFF5E0' : '#888';
-    ctx.font = 'bold 17px "Segoe UI",Arial'; ctx.textAlign='center';
-    let lbl;
-    if (!chosen)               lbl = 'Select a day';
-    else if (!canPlay)         lbl = '⏰ Wait for 6:30 AM PT';
-    else if (chosen.status === 'live') lbl = '⚡ PLAY LIVE — '+si.label;
-    else                       lbl = 'PLAY '+si.label+' — '+chosen.label;
-    ctx.fillText(lbl, 0, 6);
+  if(!mktLoading){
+    const pulse=0.96+Math.sin(menuAnim*3)*0.04;
+    ctx.save(); ctx.translate(W/2,playY); ctx.scale(pulse,pulse);
+    const bgg=ctx.createLinearGradient(-115,-26,115,26);
+    bgg.addColorStop(0,si.color); bgg.addColorStop(1,'#0d1117');
+    ctx.fillStyle=bgg; roundRect(ctx,-115,-25,230,50,25); ctx.fill();
+    ctx.strokeStyle=si.color+'AA'; ctx.lineWidth=1.5;
+    roundRect(ctx,-115,-25,230,50,25); ctx.stroke();
+    ctx.fillStyle='#FFF5E0'; ctx.font='bold 17px "Segoe UI",Arial'; ctx.textAlign='center';
+    const modeLabel = mktModeCard==='morning'
+      ? (morning ? '⚡ LIVE BELL — '+si.label : '▶ MORNING BELL — '+si.label)
+      : '⚡ PLAY LAST HOUR — '+si.label;
+    ctx.fillText(modeLabel, 0, 6);
     ctx.restore();
   }
-
   ctx.restore();
 }
 
 // ─── MARKET SELECT CLICK HANDLER (game_001) ──────────────────────────────────
 function handleMarketSelectClick(mx,my){
-  // Symbol picker
-  const sw=104, sg=8, sx0=(W - (MKT_SYMS.length*sw + (MKT_SYMS.length-1)*sg))/2;
-  for (let i=0;i<MKT_SYMS.length;i++) {
-    const bx = sx0+i*(sw+sg), by = 85;
-    if (mx>=bx && mx<=bx+sw && my>=by && my<=by+40) {
-      mktSymIdx=i;
-      localStorage.setItem('plr001_user_picked_sym','1');  // don't auto-override with SOTD
-      sfxClick(); return;
-    }
-  }
+  // Ticker display — open search overlay
+  const tkW=220, tkH=42, tkX=W/2-tkW/2, tkY=80;
+  if(mx>=tkX&&mx<=tkX+tkW&&my>=tkY&&my<=tkY+tkH+14){ sfxClick(); openSymSearch(); return; }
 
-  // Day cards — TODAY / YESTERDAY (2 cards)
-  const dates = getAvailableDates();
-  const visible = dates.slice(0, 2);
-  const cardW = (W - 18*2 - 12) / 2;
-  const cardH = 140;
-  const cardY = 145;
-  for (let i=0;i<visible.length;i++) {
-    const bx = 18 + i*(cardW + 12);
-    const by = cardY;
-    if (mx>=bx && mx<=bx+cardW && my>=by && my<=by+cardH) {
-      const d = visible[i];
-      if (d.status === 'soon') { mktLoadErr = "Comes online at 6:30 AM PT"; sfxClick(); return; }
-      mktDate = d.str; mktIsLive = (d.status === 'live'); mktLoadErr=''; sfxClick();
-      return;
+  // Mode cards
+  const cardW=(W-18*2-12)/2, cardH=136, cardY=148;
+  for(let i=0;i<2;i++){
+    const bx=18+i*(cardW+12);
+    if(mx>=bx&&mx<=bx+cardW&&my>=cardY&&my<=cardY+cardH){
+      mktModeCard = i===0 ? 'morning' : 'lastHour';
+      mktLoadErr=''; sfxClick(); return;
     }
   }
 
   // Calendar / Leaderboard buttons
-  const btnY = cardY + cardH + 18;
-  const btnGap = 10, btnW = (W - 36 - btnGap) / 2;
-  if (mx>=18 && mx<=18+btnW && my>=btnY && my<=btnY+36) { sfxClick(); openCalendar(); return; }
-  if (mx>=18+btnW+btnGap && mx<=18+btnW+btnGap+btnW && my>=btnY && my<=btnY+36) { sfxClick(); openLeaderboard(); return; }
+  const btnY=cardY+cardH+16, btnGap=10, btnW=(W-36-btnGap)/2;
+  if(mx>=18&&mx<=18+btnW&&my>=btnY&&my<=btnY+36){ sfxClick(); openCalendar(); return; }
+  if(mx>=18+btnW+btnGap&&mx<=18+btnW+btnGap+btnW&&my>=btnY&&my<=btnY+36){ sfxClick(); openLeaderboard(); return; }
 
-  // Advanced settings → opens HTML modal
-  const advY = btnY + 46;
-  if (mx>=18 && mx<=W-18 && my>=advY && my<=advY+28) { sfxClick(); openAdvanced(); return; }
+  // Advanced settings
+  const advY=btnY+46;
+  if(mx>=18&&mx<=W-18&&my>=advY&&my<=advY+28){ sfxClick(); openAdvanced(); return; }
 
-  // PLAY button — directly calls loadMarketLevel which handles loading,
-  // error display, and transitions to 'playing' on success. Skips charselect
-  // entirely: default character (selectedChar) is used.
-  const playY = H - 60;
-  if (!mktLoading && mx>=W/2-115 && mx<=W/2+115 && my>=playY-25 && my<=playY+25) {
-    const dates = getAvailableDates();
-    const chosen = dates.find(d => d.str === mktDate) || dates.find(d => d.status !== 'soon') || dates[0];
-    if (!chosen || chosen.status === 'soon') { sfxClick(); return; }
-    sfxClick();
-    mktDate = chosen.str;
-    mktIsLive = (chosen.status === 'live');
-    levelMode='stock';
-    loadMarketLevel();  // async — will set mktLoading + render Loading state, then startGame()
-    return;
+  // PLAY button
+  const playY=H-60;
+  if(!mktLoading&&mx>=W/2-115&&mx<=W/2+115&&my>=playY-25&&my<=playY+25){
+    sfxClick(); loadMarketLevel(); return;
   }
 }
 
@@ -3556,7 +3543,7 @@ function renderCalendar() {
 
 // ─── Leaderboard ───────────────────────────────────────────────────────────
 let lbSymFilter = 'ALL';      // ALL | BTC/USD | SPY | GLD
-let lbWindowFilter = 'today'; // today | all
+let lbWindowFilter = 'all'; // today | all | worst
 let _lbCache = null;          // last-fetched global list, used by feed + render
 let _lbCacheTs = 0;
 let _lbFeedInterval = null;
@@ -3617,9 +3604,7 @@ function flagImgHTML(flagEmoji) {
 }
 
 async function renderLeaderboard(forceRefetch=false) {
-  document.querySelectorAll('.lb-sym-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.sym === lbSymFilter);
-  });
+  lbSymFilter = 'ALL';
   document.querySelectorAll('.lb-win-btn').forEach(b => {
     b.classList.toggle('active', b.id === ('lb-win-' + lbWindowFilter));
   });
@@ -3893,14 +3878,17 @@ function buildFunFact(snap) {
   }
   const perSec  = snap.pnl / sessionSec;
   const perYear = perSec * 31557600;   // 365.25 * 24 * 3600
+  const principal = snap.startingBalance || 1_000_000;
   const fmtPerSec = Math.abs(perSec) >= 1000
     ? '$' + formatLargeNumber(Math.abs(perSec))
     : '$' + Math.abs(perSec).toFixed(2);
   const fmtPerYear = '$' + formatLargeNumber(Math.abs(perYear));
+  const fmtPrincipal = '$' + formatLargeNumber(principal);
+  const annualPct = (Math.abs(perYear) / principal * 100).toFixed(1);
   if (perSec >= 0) {
-    return `💰 You made <b>${fmtPerSec}/sec</b> during that run. At that rate, that'd be <b>${fmtPerYear}/year</b>.`;
+    return `💰 You made <b>${fmtPerSec}/sec</b> on your ${fmtPrincipal} capital — that's <b>${fmtPerYear}/year</b> (${annualPct}% APY).`;
   } else {
-    return `📉 You lost <b>${fmtPerSec}/sec</b> during that run. At that rate, you'd lose <b>${fmtPerYear}/year</b>.`;
+    return `📉 You lost <b>${fmtPerSec}/sec</b> on your ${fmtPrincipal} capital — that's <b>${fmtPerYear}/year</b> (${annualPct}% of capital, annualized).`;
   }
 }
 
@@ -3993,10 +3981,9 @@ async function showSummary(snap) {
   document.getElementById('summary-meta').textContent =
     `${snap.symEmoji} ${snap.symLabel} · ${snap.date}${snap.isLive ? ' · LIVE' : ''}`;
   // Challenge ribbon
-  const sotdIdx2 = stockOfTheDayIdx();
-  const isSotd = MKT_SYMS[sotdIdx2]?.sym === snap.sym && snap.isToday;
+  const isSotd = false;
   document.getElementById('summary-challenge').textContent =
-    isSotd ? '⭐ DAILY CHALLENGE' : 'PRACTICE RUN';
+    'PRACTICE RUN';
   // Stats pills
   const sec = Math.floor(snap.sessionMs / 1000);
   const mm = String(Math.floor(sec/60)).padStart(2,'0'), ss = String(sec%60).padStart(2,'0');
@@ -4241,6 +4228,26 @@ window.addEventListener('beforeunload', () => {
   if (navigator.sendBeacon) navigator.sendBeacon(url, body);
 });
 
+// ─── Ticker search overlay ───────────────────────────────────────────────────
+function openSymSearch(){
+  const ov=document.getElementById('sym-overlay');
+  if(!ov) return;
+  const inp=document.getElementById('sym-input');
+  if(inp){ inp.value=MKT_SYMS[mktSymIdx].label; inp.select(); }
+  ov.style.display='flex';
+  if(inp) setTimeout(()=>inp.focus(),80);
+}
+function closeSymSearch(){
+  const ov=document.getElementById('sym-overlay');
+  if(ov) ov.style.display='none';
+}
+function submitSymSearch(raw){
+  if(!raw||!raw.trim()) return;
+  setActiveTicker(raw.trim());
+  mktLoadErr='';
+  closeSymSearch();
+}
+
 // ─── Advanced settings modal ───────────────────────────────────────────────
 function openAdvanced() {
   const ov = document.getElementById('adv-overlay');
@@ -4313,6 +4320,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.querySelectorAll('.adv-ml').forEach(b => {
     b.addEventListener('click', () => { mktMaxLoss = parseInt(b.dataset.v,10); refreshAdvancedUI(); });
+  });
+  const symInp=document.getElementById('sym-input');
+  if(symInp) symInp.addEventListener('keydown', e=>{
+    if(e.key==='Enter'){ e.preventDefault(); submitSymSearch(symInp.value); }
+    symInp.value=symInp.value.toUpperCase();
   });
 });
 
