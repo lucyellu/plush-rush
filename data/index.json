@@ -1,8 +1,13 @@
 {
-  "updated": "2026-05-21T17:53:56.578689+00:00",
+  "updated": "2026-05-22T17:04:37.576042+00:00",
   "bundles": [
     {
       "sym": "SPY",
+      "date": "2026-05-22",
+      "bar_count": 61
+    },
+    {
+      "sym": "SPY",
       "date": "2026-05-21",
       "bar_count": 61
     },
@@ -147,8 +152,8 @@
       "bar_count": 61
     },
     {
-      "sym": "SPY",
-      "date": "2026-04-10",
+      "sym": "BTC_USD",
+      "date": "2026-05-22",
       "bar_count": 61
     },
     {
@@ -297,9 +302,9 @@
       "bar_count": 61
     },
     {
-      "sym": "BTC_USD",
-      "date": "2026-04-10",
-      "bar_count": 61
+      "sym": "GLD",
+      "date": "2026-05-22",
+      "bar_count": 53
     },
     {
       "sym": "GLD",
@@ -445,11 +450,6 @@
       "sym": "GLD",
       "date": "2026-04-13",
       "bar_count": 56
-    },
-    {
-      "sym": "GLD",
-      "date": "2026-04-10",
-      "bar_count": 49
     }
   ]
 }
